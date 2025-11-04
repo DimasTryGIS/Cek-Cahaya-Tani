@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Perbandingan Peta Sebelum & Sesudah</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // Inisialisasi peta
+    var map = L.map('map').setView([0, 0], 2); // sementara (nanti otomatis zoom)
+
+    // Basemap
+    var satellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      subdomains: ['mt0','mt1','mt2','mt3'],
+      attribution: '&copy; Google Satellite'
+    }).addTo(map);
+
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    // Load layer GeoJSON
+    var sebelum = new L.GeoJSON.AJAX("sebelum.geojson", {
+      style: { color: "red", weight: 2, fillOpacity: 0.2 }
+    });
+
+    var sesudah = new L.GeoJSON.AJAX("sesudah.geojson", {
+      style: { color: "blue", weight: 2, fillOpacity: 0.2 }
+    });
+
+    // Tambah ke kontrol layer
+    var baseMaps = {
+      "Google Satellite": satellite,
+      "OpenStreetMap": osm
+    };
+    var overlayMaps = {
+      "Sebelum": sebelum,
+      "Sesudah": sesudah
+    };
+    L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+    // Otomatis zoom ke semua layer setelah data selesai dimuat
+    var loadedLayers = 0;
+    function checkFitBounds() {
+      loadedLayers++;
+      if (loadedLayers === 2) { // tunggu kedua layer selesai
+        var bounds = L.latLngBounds();
+        if (sebelum.getBounds().isValid()) bounds.extend(sebelum.getBounds());
+        if (sesudah.getBounds().isValid()) bounds.extend(sesudah.getBounds());
+        if (bounds.isValid()) map.fitBounds(bounds);
+      }
+    }
+
+    sebelum.on('data:loaded', checkFitBounds);
+    sesudah.on('data:loaded', checkFitBounds);
+  </script>
+</body>
+</html>
